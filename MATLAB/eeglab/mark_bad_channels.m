@@ -43,61 +43,62 @@
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-function EEG = mark_bad_channels(EEG, opts)
+function EEG = mark_bad_channels(EEG, opts, marked)
+% 
+% %% Handle inputs
+% % Input fields
+% input_fields = fieldnames(opts);
+% 
+% % Make sure required fields are present
+% req_fields = {'thresh' 'freq_range'};
+% if ~all( ismember( req_fields, input_fields ) )
+%     error('options requires thresh and freq_range.')
+% end
+% 
+% % Make sure to have either chan_type or chan_inds
+% chan_fields = {'chan_type' 'chan_inds'};
+% if ~any( ismember( chan_fields, input_fields) )
+%     error('options requires one of the following: chan_type or chan_inds')
+% elseif all( ismember( chan_fields, input_fields) )
+%     warning('Both chan_type and chan_inds are present. Defaulting to chan_inds.')
+% end
+% 
+% %% Parse options
+% % FUTURE: USE DEFAULTS
+% 
+% %% Select channels for analysis (and the field in opts)
+% % Determine which channels to process
+% if ismember( input_fields, 'chan_inds' ) % Determine by input indicies
+%     chan_field = 'chan_inds';
+%     chan_inds = opts.(chan_field);
+% else % Determine by type
+%     chan_field = 'chan_type';
+%     chan_inds = find( ismember( {EEG.chanlocs.type}, opts.(chan_field) ) );
+% end
+% 
+% %% Sub-select data (FOR FUTURE IF WE WANT TO DECIMATE DATA FOR SPEED)
+% % in_data = EEG.data(chan_inds,:,:);
+% 
+% %% Mark bad channels using pop_rejchan
+% % initialize badchans structure
+% badchans = struct();
+% 
+% % Run automated bad channel detection w/ probability and spectrum
+% [~, badchans.prob] = pop_rejchan(EEG, ...
+%     'elec', chan_inds, ...
+%     'threshold',opts.thresh, ...
+%     'norm','on', ...
+%     'measure','prob');
+% [~, badchans.spec] = pop_rejchan(EEG, ...
+%     'elec',chan_inds, ...
+%     'threshold',opts.thresh, ...
+%     'norm','on', ...
+%     'measure','spec', ...
+%     'freqrange', opts.freq_range);
 
-%% Handle inputs
-% Input fields
-input_fields = fieldnames(opts);
-
-% Make sure required fields are present
-req_fields = {'thresh' 'freq_range'};
-if ~all( ismember( req_fields, input_fields ) )
-    error('options requires thresh and freq_range.')
-end
-
-% Make sure to have either chan_type or chan_inds
-chan_fields = {'chan_type' 'chan_inds'};
-if ~any( ismember( chan_fields, input_fields) )
-    error('options requires one of the following: chan_type or chan_inds')
-elseif all( ismember( chan_fields, input_fields) )
-    warning('Both chan_type and chan_inds are present. Defaulting to chan_inds.')
-end
-
-%% Parse options
-% FUTURE: USE DEFAULTS
-
-%% Select channels for analysis (and the field in opts)
-% Determine which channels to process
-if ismember( input_fields, 'chan_inds' ) % Determine by input indicies
-    chan_field = 'chan_inds';
-    chan_inds = opts.(chan_field);
-else % Determine by type
-    chan_field = 'chan_type';
-    chan_inds = find( ismember( {EEG.chanlocs.type}, opts.(chan_field) ) );
-end
-
-%% Sub-select data (FOR FUTURE IF WE WANT TO DECIMATE DATA FOR SPEED)
-% in_data = EEG.data(chan_inds,:,:);
-
-%% Mark bad channels using pop_rejchan
-% initialize badchans structure
-badchans = struct();
-
-% Run automated bad channel detection w/ probability and spectrum
-[~, badchans.prob] = pop_rejchan(EEG, ...
-    'elec', chan_inds, ...
-    'threshold',opts.thresh, ...
-    'norm','on', ...
-    'measure','prob');
-[~, badchans.spec] = pop_rejchan(EEG, ...
-    'elec',chan_inds, ...
-    'threshold',opts.thresh, ...
-    'norm','on', ...
-    'measure','spec', ...
-    'freqrange', opts.freq_range);
-
-% Find the bad channels
-badchans.bad_inds =  unique(horzcat(badchans.prob, badchans.spec));
+%Find the bad channels
+chan_inds = find( ismember( {EEG.chanlocs.type}, 'EEG' ) );
+badchans.bad_inds = (find(marked==0))';
 badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
 fprintf('\n\n%d channel(s) marked as bad from automated detection\n\n', length(badchans.bad_inds) );
     
@@ -121,8 +122,7 @@ eegplot(EEG.data(chan_inds,:,:), 'srate', EEG.srate, 'title', 'Look through data
     'events',EEG.event, 'command', []);
 plot_f = gcf;
 waitfor( plot_f);
-try, close(spec_f); end
-
+try close(spec_f); end
 
 %% Ask if any channels you want to manually label as bad
 man_rej = questdlg('Do you want (or need) to manually reject any channels?');
@@ -154,7 +154,7 @@ if ~isempty(badchans.bad_inds)
             'ListString', badchans.bad_labels, ...
             'SelectionMode', 'multiple', ...
             'Name', 'Channels marked as bad', ...
-            'PromptString', 'Select Bad Channels to set Status to Good\n (press cancel if all should be bad)', ...
+            'PromptString', 'Select Bad Channels to set Status to Good (press cancel if all should be bad)', ...
             'ListSize', [300 600] );
     else
         bad_marked_good = [];
