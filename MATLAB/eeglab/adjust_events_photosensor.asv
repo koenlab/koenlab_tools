@@ -173,11 +173,16 @@ fprintf('\r\r')
 
 % Update EEG.history
 if isnumeric(events)
-    com = sprintf('EEG = adjust_events_photosensor( EEG, {%s }', num2str(events));
+    com = sprintf('EEG = adjust_events_photosensor( EEG, [%s ', num2str(events));
 else
-    com = sprintf('EEG = adjust_events_photosensor( EEG, {%s }', sprintf('''%s'' ',events{:}));
+    com = sprintf('EEG = adjust_events_photosensor( EEG, [%s ', num2str(events));
+
+], %d, %d, [%s] );', ...
+    num2str(events), channel, threshold, num2str(time_win) );
+catch
+    com = sprintf('EEG = adjust_events_photosensor( EEG, [%s], %d, %d, [%s] );', ...
+        events, channel, threshold, num2str(time_win) );
 end
-com = sprintf('%s,  %d, %d, [%s] );', com, channel, threshold, num2str(time_win) );
 EEG = eeg_hist(EEG, com);
 
 end % of function

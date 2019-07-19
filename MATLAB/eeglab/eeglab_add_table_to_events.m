@@ -37,7 +37,7 @@ end
 % throw an error)
 event_fields = fieldnames(EEG.event);
 if any( ismember(event_fields, vars_to_add) )
-    error(['At least one variable being added as the same name as a field in EEG.event. ' ...
+    error(['At least one variable being added has the same name as a field in EEG.event. ' ...
            'This function does not handle duplicate variable/field names.']);
 end
 
