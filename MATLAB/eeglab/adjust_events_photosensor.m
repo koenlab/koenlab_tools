@@ -8,7 +8,7 @@
 %                                    photosensor channel is removed from
 %                                    the returned EEG set. 
 % Usage:
-% >> EEG = adjust_events_photosensor(EEG, events, channel, threshold, time_win ); 
+% >> EEG = adjust_events_photosensor(EEG, events, channel, threshold, time_win, fig_dir ); 
 %
 % Inputs:
 %   EEG           - Input dataset
@@ -22,6 +22,9 @@
 %                   (defaults to 5)
 %   time_win      - time window (in seconds) to extract signal from
 %                   photosensor for processing. (defaults to [-.05 .05], or 50 ms before and after )
+%   fig_dir        - directory to write a figure with a table summarizing
+%                   the settings and adjustments. 
+%
 % Outputs:
 %   EEG           - Input dataset with latencies shifted
 %
@@ -43,7 +46,7 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-function [EEG, com] = adjust_events_photosensor( EEG, events, channel, threshold, time_win )
+function [EEG, adjust_summary, com] = adjust_events_photosensor( EEG, events, channel, threshold, time_win, fig_dir )
 
 % Return help if needed
 if nargin <1 
@@ -85,7 +88,10 @@ samples_after = time_win(2);
 
 % Modify channel to convert to numeric
 if ischar(channel)
+    channel_name = channel;
     channel = find( ismember( {EEG.chanlocs.labels}, channel ) );
+elseif isnumeric(channel)
+    channel_name = EEG.chanlocs(channel).labels;
 elseif ~isnumeric(channel)
     error('channel input is of wrong class (it is %s).', class(channel))
 end
@@ -95,6 +101,11 @@ try
     events_to_adjust = ismember({EEG.event.type}, events);
 catch
     events_to_adjust = ismember([EEG.event.type], events);
+end
+
+% Handle fig_dir
+if ~exist('fig_dir','var') || isempty(fig_dir)
+    fig_dir = '';
 end
     
 
@@ -159,18 +170,70 @@ EEG = pop_select( EEG, 'nochannel', channel );
 
 % Print summary info
 fprintf('\r\rSummary of Photosensor adjustments:\r')
-fprintf('\tMean adjustment:\t\t%2.2f ms\r', (mean(delays) / EEG.srate) * 1000);
-fprintf('\tMedian adjustment:\t\t%2.2f ms\r', (median(delays) / EEG.srate) * 1000);
-fprintf('\tSmallest adjustment:\t%2.2f ms\r', (min(delays) / EEG.srate) * 1000);
-fprintf('\tLargest adjustment:\t\t%2.2f ms\r', (max(delays) / EEG.srate) * 1000);
+fprintf('\tMean adjustment:\t\t%2.2f ms\n', (mean(delays) / EEG.srate) * 1000);
+fprintf('\tMedian adjustment:\t\t%2.2f ms\n', (median(delays) / EEG.srate) * 1000);
+fprintf('\tSmallest adjustment:\t%2.2f ms\n', (min(delays) / EEG.srate) * 1000);
+fprintf('\tLargest adjustment:\t\t%2.2f ms\n', (max(delays) / EEG.srate) * 1000);
 if min(delays) < 0
     fprintf('****NEGATIVE VALUES FOR SMALLEST ARE OK BUT COULD INDICATE DROPPED FRAMES****\r');
 end
 if max(delays) < 0
     fprintf('****NEGATIVE VALUES FOR LARGEST ARE UNEXPECTED BUT POSSIBLY OK. CHECK YOUR SETUP!!!****\r');
 end
-fprintf('\r\r')
+fprintf('\n')
 
+% Make a table, and save as an image
+if ~isempty(fig_dir)
+    
+    % Info to screen
+    fprintf('Writing summary figure to file...');
+    
+    % Setup the figure
+    f = figure('visible','off','Units','Normalized','Color','white');
+        
+    % Settings table data
+    table = {
+        sprintf('''%s'' ',events{:}); ...
+        sprintf('%s (%d)', channel_name, channel); ...
+        num2str(threshold); ...
+        sprintf('[%s]',num2str(time_win)); ...
+        };
+    rownames = {'Event Types' 'Channel' 'Threshold' 'Time Window (ms)'};
+    uitable('Parent',f,'Data',table,'Rowname',rownames,'Units','Normalized', ...
+        'Position',[.1 .6 .8 .3],'ColumnName','Value','ColumnWidth',{max(cellfun(@length,table))*5});
+    uicontrol('Parent',f,'Style','text','String','Photosensor Adjust Settings', ...
+        'Units','Normalized','Position',[.3 .90 .4 .05], 'BackgroundColor','white', ...
+        'FontWeight','bold');
+    
+    t2_pos = [.5 .25 .4 .5];
+        
+    % Data table
+    table = { ...
+        (mean(delays) / EEG.srate) * 1000; ...
+        (median(delays) / EEG.srate) * 1000; ...
+        (min(delays) / EEG.srate) * 1000; ...
+        (max(delays) / EEG.srate) * 1000; ...
+        };
+    table = cellfun(@num2str,table,'UniformOutput',false);
+    rownames = {'Mean' 'Median' 'Smallest' 'Largest'};
+    uitable('Parent',f,'Data',table,'Rowname',rownames,'Units','Normalized', ...
+        'Position',[.1 .1 .4 .3],'ColumnName','Value','ColumnWidth',{max(cellfun(@length,table))*8});
+    uicontrol('Parent',f,'Style','text','String','Adjustment Results', ...
+        'Units','Normalized','Position',[.15 .41 .3 .05], 'BackgroundColor','white', ...
+        'FontWeight','bold');
+    
+    % Make a histogram
+    subplot(2,2,4);
+    hist((delays / EEG.srate) * 1000);
+    title('Histogram of Delay Adjustments');
+    
+    % Save figure
+    saveas(f,fullfile(fig_dir,'photosensor_adjust_summary.png'));
+    close(f);
+    fprintf('DONE\n\n');
+    
+end
+    
 % Update EEG.history
 if isnumeric(events)
     com = sprintf('EEG = adjust_events_photosensor( EEG, {%s }', num2str(events));
