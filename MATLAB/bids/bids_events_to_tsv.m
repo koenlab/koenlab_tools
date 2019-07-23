@@ -26,7 +26,17 @@ function bids_events_to_tsv( EEG, tsv_file, vars_to_write )
 
 % Just convert EEG.event to cell table to start off with
 % This is useful for extracting data later on
-in_dt = struct2table( EEG.event );
+if length( EEG.event ) > 1
+    in_dt = struct2table( EEG.event );
+else % Handle a single trial or marker
+    event_cell = struct2cell( EEG.event );
+    event_cell( cellfun(@isempty,event_cell) ) = {'n/a'};
+    if ~isrow( event_cell )
+        event_cell = event_cell';
+    end
+    event_fields = fieldnames( EEG.event );
+    in_dt = cell2table( event_cell, 'VariableNames', event_fields );
+end
 
 % Extract onsets, samples, and durations
 onset    = (in_dt.latency / EEG.srate) - (1 / EEG.srate);
