@@ -51,11 +51,11 @@ function EEG = mark_bad_channels(EEG, opts)
 % Input fields
 input_fields = fieldnames(opts);
 
-% Make sure required fields are present
-req_fields = {'thresh' 'freq_range'};
-if ~all( ismember( req_fields, input_fields ) )
-    error('options requires thresh and freq_range.')
-end
+% % Make sure required fields are present
+% req_fields = {'thresh' 'freq_range'};
+% if ~all( ismember( req_fields, input_fields ) )
+%     error('options requires thresh and freq_range.')
+% end
 
 % Make sure to have either chan_type or chan_inds
 chan_fields = {'chan_type' 'chan_inds'};
@@ -70,10 +70,10 @@ if ~isfield(opts, 'badchans')
     opts.badchans = [];
 end
 
-% Handle fig_dir
-if ~isfield(opts,'fig_dir')
-    opts.fig_dir = '';
-end
+% % Handle fig_dir
+% if ~isfield(opts,'fig_dir')
+%     opts.fig_dir = '';
+% end
 
 %% Select channels for analysis (and the field in opts)
 % Determine which channels to process
@@ -94,27 +94,28 @@ badchans = struct();
 % Copy from opts.badchans
 badchans.given = opts.badchans;
 
-% Run automated bad channel detection w/ probability and spectrum
-[~, badchans.prob_bad, badchans.prob_measure] = pop_rejchan(EEG, ...
-    'elec', chan_inds, ...
-    'threshold',opts.thresh, ...
-    'norm','on', ...
-    'measure','prob');
-[~, badchans.spec_bad, badchans.spec_measure] = pop_rejchan(EEG, ...
-    'elec',chan_inds, ...
-    'threshold',opts.thresh, ...
-    'norm','on', ...
-    'measure','spec', ...
-    'freqrange', opts.freq_range);
+% % Run automated bad channel detection w/ probability and spectrum
+% [~, badchans.prob_bad, badchans.prob_measure] = pop_rejchan(EEG, ...
+%     'elec', chan_inds, ...
+%     'threshold',opts.thresh, ...
+%     'norm','on', ...
+%     'measure','prob');
+% [~, badchans.spec_bad, badchans.spec_measure] = pop_rejchan(EEG, ...
+%     'elec',chan_inds, ...
+%     'threshold',opts.thresh, ...
+%     'norm','on', ...
+%     'measure','spec', ...
+%     'freqrange', opts.freq_range);
 
 %Find the bad channels
 chan_inds = find( ismember( {EEG.chanlocs.type}, 'EEG' ) );
-badchans.bad_inds = unique( [badchans.prob_bad badchans.spec_bad badchans.given] );
+%badchans.bad_inds = unique( [badchans.prob_bad badchans.spec_bad badchans.given] );
+badchans.bad_inds = unique( [badchans.given] );
 badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
-fprintf('\n\n%d channel(s) marked as bad from automated detection:\n', length(badchans.bad_inds) );
+% fprintf('\n\n%d channel(s) marked as bad from automated detection:\n', length(badchans.bad_inds) );
 fprintf('\t%d channels marked manually prior to this function\n', length(badchans.given));
-fprintf('\t%d channels marked as improbable (%d threshold)\n', length(badchans.prob_bad), opts.thresh);
-fprintf('\t%d channels marked based on bad spectrum (%d threshold)\n\n', length(badchans.spec_bad), opts.thresh);
+% fprintf('\t%d channels marked as improbable (%d threshold)\n', length(badchans.prob_bad), opts.thresh);
+% fprintf('\t%d channels marked based on bad spectrum (%d threshold)\n\n', length(badchans.spec_bad), opts.thresh);
 pause( 3 ); % Pause for 5 seconds
 
 %% Plot the data
@@ -137,6 +138,7 @@ pop_spectopo(EEG_spect, 1, [EEG.xmin EEG.xmax]*EEG.srate, 'EEG' , ...
     'freq', [3 10 15 25 40 55 80], ...
     'freqrange', opts.freq_range, ...
     'electrodes','off');
+
 % Save figure
 if ~isempty(opts.fig_dir)
     saveas(spec_f,fullfile(opts.fig_dir,'mark_bad_chans_freq_spectrum.png'));
@@ -176,27 +178,27 @@ end
 badchans.bad_inds   =  unique(horzcat(badchans.bad_inds, badchans.manual));
 badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
 
-%% Ask if there are any channels you want to remove that are marked as bad
-if ~isempty(badchans.bad_inds)
-
-    clear_bads = questdlg('Do you want to unmark a channel labeled as bad (i.e., mark it as good)?');
-    if strcmpi(clear_bads,'yes')
-        bad_marked_good = listdlg( ...
-            'ListString', badchans.bad_labels, ...
-            'SelectionMode', 'multiple', ...
-            'Name', sprintf('%s: Channels marked as bad', num2str(EEG.subject)), ...
-            'PromptString', 'Select Bad Channels to set Status to Good (press cancel if all should be bad)', ...
-            'ListSize', [600 300] );
-    else
-        bad_marked_good = [];
-    end
-    
-    % Update
-    badchans.bad_inds(bad_marked_good) = [];
-    badchans.bad_marked_good = badchans.bad_labels(bad_marked_good);
-    badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
-    
-end
+% %% Ask if there are any channels you want to remove that are marked as bad
+% if ~isempty(badchans.bad_inds)
+% 
+%     clear_bads = questdlg('Do you want to unmark a channel labeled as bad (i.e., mark it as good)?');
+%     if strcmpi(clear_bads,'yes')
+%         bad_marked_good = listdlg( ...
+%             'ListString', badchans.bad_labels, ...
+%             'SelectionMode', 'multiple', ...
+%             'Name', sprintf('%s: Channels marked as bad', num2str(EEG.subject)), ...
+%             'PromptString', 'Select Bad Channels to set Status to Good (press cancel if all should be bad)', ...
+%             'ListSize', [600 300] );
+%     else
+%         bad_marked_good = [];
+%     end
+%     
+%     % Update
+%     badchans.bad_inds(bad_marked_good) = [];
+%     badchans.bad_marked_good = badchans.bad_labels(bad_marked_good);
+%     badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
+%     
+% end
     
 %% Output info
 if ~isempty(badchans.bad_inds)
@@ -210,48 +212,48 @@ else
     
 end
 
-%% Plot a table of the values
-% Make a table, and save as an image
-if ~isempty(opts.fig_dir)
-    
-    % Setup the figure
-    f = figure('Visible','off','Units','Normalized','Color','white','Position',[.4 .1 .4 .7]);
-        
-    % Make the table
-    table = repmat({''},EEG.nbchan, 4);
-    table(badchans.bad_inds,1) = {'bad'};
-    table(badchans.given,2)    = {true};
-    table(:,3)                 = num2cell(badchans.prob_measure);
-    table(:,4)                 = num2cell(badchans.spec_measure);
-    
-    % Get the rownames
-    rownames    = {EEG.chanlocs.labels};
-    columnnames = {'Is Bad?' 'Manual' 'Prob. Measure' 'Spec. Measure'};
-    
-    % Reshape table
-    table1 = table(1:32,:);
-    table2 = table(33:end,:);
-    rownames1 = rownames(1:32);
-    rownames2 = rownames(33:end);
-    
-    % Write the table1
-    uitable('Parent',f,'Data',table1,'Rowname',rownames1,'Units','Normalized', ...
-        'Position',[.05 .02 .4 .9],'ColumnName',columnnames,'ColumnWidth',{50 50 80 80}, ...
-        'FontSize',8,'RowStriping','on');
-    
-    % Write the table2
-    uitable('Parent',f,'Data',table2,'Rowname',rownames2,'Units','Normalized', ...
-        'Position',[.55 .02 .4 .9],'ColumnName',columnnames,'ColumnWidth',{50 50 80 80}, ...
-        'FontSize',8,'RowStriping','on');
-    
-    uicontrol('Parent',f,'Style','text','String','Bad Channel Output', ...
-        'Units','Normalized','Position',[.3 .92 .4 .05], 'BackgroundColor','white', ...
-        'FontWeight','bold');
-    
-    % Save figure
-    saveas(f,fullfile(opts.fig_dir,'mark_bad_chans_table.png'));
-    
-end
+% %% Plot a table of the values
+% % Make a table, and save as an image
+% if ~isempty(opts.fig_dir)
+%     
+%     % Setup the figure
+%     f = figure('Visible','off','Units','Normalized','Color','white','Position',[.4 .1 .4 .7]);
+%         
+%     % Make the table
+%     table = repmat({''},EEG.nbchan, 4);
+%     table(badchans.bad_inds,1) = {'bad'};
+%     table(badchans.given,2)    = {true};
+%     table(:,3)                 = num2cell(badchans.prob_measure);
+%     table(:,4)                 = num2cell(badchans.spec_measure);
+%     
+%     % Get the rownames
+%     rownames    = {EEG.chanlocs.labels};
+%     columnnames = {'Is Bad?' 'Manual' 'Prob. Measure' 'Spec. Measure'};
+%     
+%     % Reshape table
+%     table1 = table(1:32,:);
+%     table2 = table(33:end,:);
+%     rownames1 = rownames(1:32);
+%     rownames2 = rownames(33:end);
+%     
+%     % Write the table1
+%     uitable('Parent',f,'Data',table1,'Rowname',rownames1,'Units','Normalized', ...
+%         'Position',[.05 .02 .4 .9],'ColumnName',columnnames,'ColumnWidth',{50 50 80 80}, ...
+%         'FontSize',8,'RowStriping','on');
+%     
+%     % Write the table2
+%     uitable('Parent',f,'Data',table2,'Rowname',rownames2,'Units','Normalized', ...
+%         'Position',[.55 .02 .4 .9],'ColumnName',columnnames,'ColumnWidth',{50 50 80 80}, ...
+%         'FontSize',8,'RowStriping','on');
+%     
+%     uicontrol('Parent',f,'Style','text','String','Bad Channel Output', ...
+%         'Units','Normalized','Position',[.3 .92 .4 .05], 'BackgroundColor','white', ...
+%         'FontWeight','bold');
+%     
+%     % Save figure
+%     saveas(f,fullfile(opts.fig_dir,'mark_bad_chans_table.png'));
+%     
+% end
 
 %% Return EEG
 EEG.etc.bad_channels = badchans;
