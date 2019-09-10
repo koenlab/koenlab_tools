@@ -78,25 +78,23 @@ else
     error('chan_inds or chan_type have not been provided as input. This is required.');
 end
 
-%% Mark bad channels using pop_rejchan
-% initialize badchans structure
-badchans = struct();
-
-% Copy from opts.badchans
-badchans.given = opts.badchans;
-
-%Find the bad channels
-chan_inds = find( ismember( {EEG.chanlocs.type}, 'EEG' ) );
-badchans.bad_inds = unique( [badchans.given] );
-badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
-fprintf('\t%d channels marked manually prior to this function\n', length(badchans.given));
-pause( 3 ); % Pause for 3 seconds
-
-%% Plot the data
-
-%Plot frequency spectrum, only if input is 'yes'
+%% Proceed with initialization and plot frequency spectrum, only if input is 'yes'
 if strcmp(opts.freq_spect, 'yes')
     
+    % initialize badchans structure
+    badchans = struct();
+    
+    % Copy from opts.badchans
+    badchans.given = opts.badchans;
+    
+    %Find the bad channels
+    chan_inds = find( ismember( {EEG.chanlocs.type}, 'EEG' ) );
+    badchans.bad_inds = unique( [badchans.given] );
+    badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
+    fprintf('\t%d channels marked manually prior to this function\n', length(badchans.given));
+    pause( 3 ); % Pause for 3 seconds
+    
+    % Plot the data
     % Plot channel properties
     spec_f = figure('Units','Normalized');
     spec_f.Position(1:2) = [.5 .5];
@@ -118,13 +116,13 @@ if strcmp(opts.freq_spect, 'yes')
     
 end %end of if loop to plot frequency spectrum
 
-%Plot channel scroll, only if input is 'yes'
+%% Plot channel scroll, only if input is 'yes'
 
 if strcmp(opts.plot_EEG_scroll, 'yes')
     
     % Determine channel color (bad in red; good is black)
     colors = cell(1,length(chan_inds)); colors(:) = { 'k' };
-    colors(badchans.bad_inds) = { 'r' };
+    colors(EEG.etc.bad_channels.bad_inds) = { 'r' };
     
     % Show the plot
     eegplot(EEG.data(chan_inds,:,:), 'srate', EEG.srate, 'title', sprintf('%s: Look through data - Bad Channels Marked in Red', num2str(EEG.subject)), ...
