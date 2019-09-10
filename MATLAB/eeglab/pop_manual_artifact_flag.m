@@ -145,10 +145,10 @@ end
 % ------------------------------------
 % INITIALIZE EEG>REJECT>REJMANUAL FOR INSTANCES WHEN IT IS EMPTY (SET TO
 % zeros(1,size(EEG.data,3)); Same for EEG.reject.rejmanualE
-if EEG.reject.rejmanual == []
+if isempty(EEG.reject.rejmanual)
     EEG.reject.rejmanual = zeros(1,size(EEG.data,3));
 end
-if EEG.reject.rejmanualE == []
+if isempty(EEG.reject.rejmanualE)
     EEG.reject.rejmanualE = zeros(1,size(EEG.data,3));
 end
 
