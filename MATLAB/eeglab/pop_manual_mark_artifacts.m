@@ -40,12 +40,6 @@
 
 function [EEG, com] = pop_manual_mark_artifacts( EEG, chan_inds ) 
 
-% the command output is a hidden output that does not have to
-% be described in the header
-
-com = ''; % this initialization ensure that the function will return something
-          % if the user press the cancel button            
-
 %% display help if not enough arguments
 % ------------------------------------
 if nargin < 1
@@ -172,5 +166,6 @@ if nargin == 2
 else
     com = sprintf('%s = pop_manual_mark_artifacts(%s,%s);', inputname(1), num2str(chan_inds));
 end
+EEG = eeg_hist(EEG, com);
 
 end

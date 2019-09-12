@@ -44,7 +44,7 @@ end
 make_dirs({filepath});
 
 % Build com
-com = sprintf('EEG = save_eeglab_setname(EEG, %s, %s, %s);', num2str(setname), filepath, filename );
+com = sprintf('EEG = save_eeglab_set(EEG, ''%s'', ''%s'', ''%s'');', num2str(setname), filepath, filename );
 EEG = eeg_hist(EEG, com);
 
 % Save data
