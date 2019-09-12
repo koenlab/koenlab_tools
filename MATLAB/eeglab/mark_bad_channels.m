@@ -17,7 +17,7 @@
 %                   consideration for rejection
 %                   2) 'badchans'   - vector of any bad channels indicies
 %                                     from other approaches.
-%                   3) 'plot_freq_spect' - option to plot or not
+%                   3) 'plot_plot_freq_spect' - option to plot or not
 %
 % Outputs:
 %   EEG           - EEG set with new field (EEG.bad_channels). Contains
@@ -66,6 +66,16 @@ if ~isfield(opts,'fig_dir')
     opts.fig_dir = '';
 end
 
+% handle plot_freq_spect
+if ~isfield(opts, 'plot_freq_spect')
+    opts.plot_freq_spect = 1:50;
+end
+
+% handle plot_EEG_scroll
+if ~isfield(opts, 'plot_EEG_scroll')
+    opts.plot_EEG_scroll = 'no';
+end
+
 %% Select channels for analysis (and the field in opts)
 % Determine which channels to process
 if ismember( 'chan_inds', input_fields ) % Determine by input indicies
@@ -78,21 +88,20 @@ else
     error('chan_inds or chan_type have not been provided as input. This is required.');
 end
 
+% initialize badchans structure
+badchans = struct();
+
+% Copy from opts.badchans
+badchans.given = opts.badchans;
+
+%Find the bad channels
+chan_inds = find( ismember( {EEG.chanlocs.type}, 'EEG' ) );
+badchans.bad_inds = unique( [badchans.given] );
+badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
+fprintf('\t%d channels marked manually prior to this function\n', length(badchans.given));
+
 %% Proceed with initialization and plot frequency spectrum, only if input is 'yes'
-if strcmp(opts.freq_spect, 'yes')
-    
-    % initialize badchans structure
-    badchans = struct();
-    
-    % Copy from opts.badchans
-    badchans.given = opts.badchans;
-    
-    %Find the bad channels
-    chan_inds = find( ismember( {EEG.chanlocs.type}, 'EEG' ) );
-    badchans.bad_inds = unique( [badchans.given] );
-    badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
-    fprintf('\t%d channels marked manually prior to this function\n', length(badchans.given));
-    pause( 3 ); % Pause for 3 seconds
+if strcmp(opts.plot_freq_spect, 'yes')
     
     % Plot the data
     % Plot channel properties
@@ -107,7 +116,7 @@ if strcmp(opts.freq_spect, 'yes')
     
     % Save figure
     if ~isempty(opts.fig_dir)
-        saveas(spec_f,fullfile(opts.fig_dir,'mark_bad_chans_freq_spectrum.png'));
+        saveas(spec_f,fullfile(opts.fig_dir,'mark_bad_chans_plot_freq_spectrum.png'));
     end
     
     % Wait for user to close plot before continuing
