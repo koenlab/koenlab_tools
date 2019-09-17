@@ -79,7 +79,7 @@ else
 end
 
 %% Proceed with initialization and plot frequency spectrum, only if input is 'yes'
-if strcmp(opts.freq_spect, 'yes')
+if strcmp(opts.plot_freq_spect, 'yes')
     
     % initialize badchans structure
     badchans = struct();
