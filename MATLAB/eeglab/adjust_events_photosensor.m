@@ -122,7 +122,7 @@ if ~exist('draw_trials','var') || isempty(draw_trials)
 end
 
 % Get the threshold value. this is threshold % of the maximum value
-threshold_value = round(max(EEG.data(channel,:,EEG.trials)) * threshold);    
+threshold_value = round(max(EEG.data(channel,:)) * threshold);    
 
 % Go in and do the adjustment
 delays = [];
@@ -181,7 +181,7 @@ for i = 1:length(events_to_adjust)
         else
             EEG.event(i).latency = new_latency;
             EEG.event(i).latency_delay = new_latency - orig_latency;
-            EEG.event(i).photosensor_shift = false;
+            EEG.event(i).photosensor_shift = true;
         end
         delays = [delays EEG.event(i).latency_delay];
         
