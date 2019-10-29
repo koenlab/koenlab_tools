@@ -179,8 +179,8 @@ for i = 1:length(events_to_adjust)
             EEG.event(i).latency_delay = delay;
             EEG.event(i).photosensor_shift = false;
         else
-            EEG.event(i).latency = new_latency;
-            EEG.event(i).latency_delay = new_latency - orig_latency;
+            EEG.event(i).latency = psensor_latency;
+            EEG.event(i).latency_delay = psensor_latency - orig_latency;
             EEG.event(i).photosensor_shift = true;
         end
         delays = [delays EEG.event(i).latency_delay];
