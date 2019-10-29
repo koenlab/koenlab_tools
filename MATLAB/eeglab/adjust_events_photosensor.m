@@ -1,14 +1,13 @@
-% adjust_events_photosensor() -  Adjust event latencies given a (raw)
-%                                    photosensor channel. The algorithm
-%                                    takes the differential of a data
-%                                    segment, and find the first value
-%                                    above threshold. This handles baseline
-%                                    correction and different settings on
-%                                    photosensor recording. Note that the
-%                                    photosensor channel is removed from
-%                                    the returned EEG set. 
+% adjust_events_photosensor() -  Adjust event latencies given a (raw) photosensor channel. The algorithm first
+%                                finds the maximum photosensor value, and takes a percentage of this as the
+%                                threshold value for an event (e.g., if the threshold input is 80%, and the max value
+%                                is 200, the threshold value is 160). In each segment around a marker, the
+%                                alogirthm finds the first sample that exceeds the treshold value as the onset. If the 'delay' between the marker
+%                                (original) and photosensor onsets is negative (original - photosensor) or it is
+%                                below 1/2 of the frame rate (in milliseconds), then no correction is done.
+%                                
 % Usage:
-% >> EEG = adjust_events_photosensor(EEG, events, channel, threshold, time_win, fig_dir ); 
+% >> EEG = adjust_events_photosensor(EEG, events, channel, threshold, time_win, frame_rate, fig_dir, draw_trials ); 
 %
 % Inputs:
 %   EEG           - Input dataset
@@ -17,13 +16,17 @@
 %   channel       - Channel number (numeric) or label (string/character)
 %                   containing the photosensor data. (defaults to last
 %                   channel in EEG.chanlocs)
-%   threshold     - Value (numeric) at which the (differential) of the
-%                   photosensor trace is to but marked as an onset.
-%                   (defaults to 5)
+%   threshold     - Proportion of the min-max difference as the cutoff for
+%                   detecting an event. (default is .8)
 %   time_win      - time window (in seconds) to extract signal from
 %                   photosensor for processing. (defaults to [-.05 .05], or 50 ms before and after )
-%   fig_dir        - directory to write a figure with a table summarizing
+%   frame_rate    - frame rate of the monitor the photosensor is attached
+%                   to. No onset correction for 'delays' less than 1/2 of a frame. 
+%                   (defaults to 100Hz, or 5ms)
+%   fig_dir       - directory to write a figure with a table summarizing
 %                   the settings and adjustments. 
+%   draw_trials   - draws a figure for each marker segment showing the
+%                   correction. User must close each figure. (default false)
 %
 % Outputs:
 %   EEG           - Input dataset with latencies shifted
@@ -46,7 +49,7 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-function [EEG, adjust_summary, com] = adjust_events_photosensor( EEG, events, channel, threshold, time_win, fig_dir )
+function [EEG, com] = adjust_events_photosensor( EEG, events, channel, threshold, time_win, frame_rate, fig_dir, draw_trials )
 
 % Return help if needed
 if nargin <1 
@@ -72,12 +75,17 @@ end
 
 % Deal with empty or non-existent threshold
 if ~exist('threshold','var') || isempty(threshold)
-    threshold = 5;
+    threshold = .85;
 end
 
 % Deal with empty or non-existent time_win
 if ~exist('time_win','var') || isempty(time_win)
     time_win = [-0.05 0.05];
+end
+
+% Deal with empty or non-existent frame_rate
+if ~exist('frame_rate','var') || isempty(frame_rate)
+    frame_rate = 100; % Assume a 100Hz monitor
 end
 
 % Modify time window and convert to samples
@@ -107,7 +115,14 @@ end
 if ~exist('fig_dir','var') || isempty(fig_dir)
     fig_dir = '';
 end
-    
+
+% Handle draw_trials
+if ~exist('draw_trials','var') || isempty(draw_trials)
+    draw_trials = false;
+end
+
+% Get the threshold value. this is threshold % of the maximum value
+threshold_value = round(max(EEG.data(channel,:,EEG.trials)) * threshold);    
 
 % Go in and do the adjustment
 delays = [];
@@ -127,7 +142,6 @@ for i = 1:length(events_to_adjust)
         % Get info on this event
         orig_latency = EEG.event(i).latency;
         EEG.event(i).orig_latency = orig_latency;
-        EEG.event(i).photosensor_shift = true;
             
         % Latencies to grab (0 is samples before max value) 1 is added to
         % max 0 timepoitn of marker to samples_before value (in the
@@ -136,29 +150,39 @@ for i = 1:length(events_to_adjust)
         
         % Extract the data segment        
         data_segment = EEG.data(channel, latencies);
-        sig_accel = [0 diff(data_segment)]; % Add zero to pad output for indexing purposes
         
         % Determine sample in data set where onset happened
-        onset_sample = find(sig_accel >= threshold, 1, 'first');
+        onset_sample = find(data_segment >= threshold_value, 1, 'first');
         
-        % Determine onset latency
-        new_latency = latencies(onset_sample);
-        
-%         % Draw figure
-%         f = figure;
-%         plot(latencies,data_segment);
-%         hold on;
-%         line(repmat(this_event.latency,2,1),get(gca,'YLim'),'Color','r');
-%         line(repmat(new_latency,2,1),get(gca,'YLim'),'Color','g');
-%         title(sprintf('Onset delay = %d samples (%1.3f ms)', ...
-%             (onset_sample - (samples_before*-1)), ...
-%             (new_latency - this_event.latency) / EEG.srate) );
-%         hold off;
-%         waitfor(f);
+        % Determine corrected latency
+        psensor_latency = latencies(onset_sample);
+        delay = psensor_latency - orig_latency;
+                
+        % Draw figure
+        if draw_trials
+            f = figure;
+            plot(latencies,data_segment);
+            hold on;
+            line(repmat(EEG.event(i).latency,2,1),get(gca,'YLim'),'Color','r');
+            line(repmat(psensor_latency,2,1),get(gca,'YLim'),'Color','g');
+            title(sprintf('Onset delay = %d samples (%1.3f ms)', ...
+                (onset_sample - (samples_before*-1)), ...
+                delay / EEG.srate) );
+            hold off;
+            waitfor(f);
+        end
         
         % Update the event
-        EEG.event(i).latency = new_latency;
-        EEG.event(i).latency_delay = new_latency - orig_latency;
+        if delay < 0 || delay < frame_rate / 2
+            EEG.event(i).latency = orig_latency;
+            delay = 0;
+            EEG.event(i).latency_delay = delay;
+            EEG.event(i).photosensor_shift = false;
+        else
+            EEG.event(i).latency = new_latency;
+            EEG.event(i).latency_delay = new_latency - orig_latency;
+            EEG.event(i).photosensor_shift = false;
+        end
         delays = [delays EEG.event(i).latency_delay];
         
     end
@@ -174,12 +198,6 @@ fprintf('\tMean adjustment:\t\t%2.2f ms\n', (mean(delays) / EEG.srate) * 1000);
 fprintf('\tMedian adjustment:\t\t%2.2f ms\n', (median(delays) / EEG.srate) * 1000);
 fprintf('\tSmallest adjustment:\t%2.2f ms\n', (min(delays) / EEG.srate) * 1000);
 fprintf('\tLargest adjustment:\t\t%2.2f ms\n', (max(delays) / EEG.srate) * 1000);
-if min(delays) < 0
-    fprintf('****NEGATIVE VALUES FOR SMALLEST ARE OK BUT COULD INDICATE DROPPED FRAMES****\r');
-end
-if max(delays) < 0
-    fprintf('****NEGATIVE VALUES FOR LARGEST ARE UNEXPECTED BUT POSSIBLY OK. CHECK YOUR SETUP!!!****\r');
-end
 fprintf('\n')
 
 % Make a table, and save as an image
