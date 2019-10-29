@@ -17,7 +17,7 @@
 %                   containing the photosensor data. (defaults to last
 %                   channel in EEG.chanlocs)
 %   threshold     - Proportion of the min-max difference as the cutoff for
-%                   detecting an event. (default is .8)
+%                   detecting an event. (default is .85)
 %   time_win      - time window (in seconds) to extract signal from
 %                   photosensor for processing. (defaults to [-.05 .05], or 50 ms before and after )
 %   frame_rate    - frame rate of the monitor the photosensor is attached
