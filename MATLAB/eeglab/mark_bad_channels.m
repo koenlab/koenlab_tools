@@ -102,9 +102,7 @@ fprintf('\t%d channels marked manually prior to this function\n', length(badchan
 
 %% Proceed with initialization and plot frequency spectrum, only if input is 'yes'
 if strcmp(opts.plot_freq_spect, 'yes')
-<<<<<<< HEAD
-=======
-    
+
     % initialize badchans structure
     badchans = struct();
     
@@ -117,7 +115,6 @@ if strcmp(opts.plot_freq_spect, 'yes')
     badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
     fprintf('\t%d channels marked manually prior to this function\n', length(badchans.given));
     pause( 3 ); % Pause for 3 seconds
->>>>>>> 70f7cc8ea20e0cbc4d207f80d22af6613ec282b3
     
     % Plot the data
     % Plot channel properties
