@@ -99,22 +99,10 @@ chan_inds = find( ismember( {EEG.chanlocs.type}, 'EEG' ) );
 badchans.bad_inds = unique( [badchans.given] );
 badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
 fprintf('\t%d channels marked manually prior to this function\n', length(badchans.given));
-
+pause( 3 ); % Pause for 3 seconds
+    
 %% Proceed with initialization and plot frequency spectrum, only if input is 'yes'
 if strcmp(opts.plot_freq_spect, 'yes')
-
-    % initialize badchans structure
-    badchans = struct();
-    
-    % Copy from opts.badchans
-    badchans.given = opts.badchans;
-    
-    %Find the bad channels
-    chan_inds = find( ismember( {EEG.chanlocs.type}, 'EEG' ) );
-    badchans.bad_inds = unique( [badchans.given] );
-    badchans.bad_labels = {EEG.chanlocs(badchans.bad_inds).labels};
-    fprintf('\t%d channels marked manually prior to this function\n', length(badchans.given));
-    pause( 3 ); % Pause for 3 seconds
     
     % Plot the data
     % Plot channel properties
