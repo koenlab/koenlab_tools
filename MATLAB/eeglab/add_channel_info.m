@@ -45,7 +45,7 @@ function EEG = add_channel_info(EEG, ref)
         elseif strcmpi(EEG.chanlocs(c).labels, 'Photosensor')
             EEG.chanlocs(c).ref = 'n/a';
             EEG.chanlocs(c).type = 'MISC';
-            EEG.chanlocs(c).unit = 'mV';
+            EEG.chanlocs(c).unit = 'µV';
         else
             EEG.chanlocs(c).ref = ref;
             EEG.chanlocs(c).type = 'EEG';
