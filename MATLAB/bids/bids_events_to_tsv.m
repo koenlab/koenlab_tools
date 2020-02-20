@@ -45,7 +45,7 @@ duration = in_dt.duration;
 value    = in_dt.type;
 
 % create output dt (out_dt)
-out_dt = table(onset,sample,duration,value);
+out_dt = table(onset,duration,value,sample);
 
 % Add additional columns if need be
 if isvarname('vars_to_write') && ~isempty(vars_to_write)
@@ -65,7 +65,8 @@ end
 
 % If file name is supplied, use it to make _events.tsv sidecar
 if isvarname('filename') && ~isempty(tsv_file)
-    [path, file] = fileparts(tsv_file);
+    [path, file, ext] = fileparts(tsv_file);
+    file = [file ext];
 else
     if isempty(EEG.filepath)
         path = pwd;
@@ -77,8 +78,8 @@ else
     else
         [~,file] = fileparts(EEG.filename);
     end
+    file = strrep( file, '_eeg', '_events.tsv' );
 end
-file = strrep( file, '_eeg', '_events.tsv' );
 
 % Write to file
 events_tsv_name = fullfile( path, file );
