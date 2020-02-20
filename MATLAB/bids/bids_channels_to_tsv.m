@@ -27,15 +27,17 @@ dt = struct2table( chanlocs_trimmed );
 % Update variable names
 new_vars = {'name' 'type' 'reference' 'units'};
 dt.Properties.VariableNames = new_vars;
+dt = movevars(dt,'units','Before','reference');
 
 % Add sampling frequency
 data_add_size = [size(dt,1), 1];
 dt.sampling_frequency = repmat( EEG.srate, data_add_size);
-dt.status = repmat( {'good'}, data_add_size ); 
+%dt.status = repmat( {'good'}, data_add_size ); 
 
 % If file name is supplied, use it to make _events.tsv sidecar
 if isvarname('filename') && ~isempty(filename)
-    [path, file] = fileparts(filename);
+    [path, file, ext] = fileparts(filename);
+    file = [file ext];
 else
     if isempty(EEG.filepath)
         path = pwd;
@@ -47,8 +49,8 @@ else
     else
         [~,file] = fileparts(EEG.filename);
     end
+    file = strrep( file, '_eeg', '_channels.tsv' );
 end
-file = strrep( file, '_eeg', '_channels.tsv' );
 
 % Write to file
 chans_tsv_name = fullfile( path, file );
